@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Froala Math & Chemistry - Exemplo com dist/</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/froala-editor@4/css/froala_editor.pkgd.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../dist/froala-math-chemistry.min.css">
+
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #f5f6f8; color: #222; margin: 0; }
+    header { background: #fff; border-bottom: 1px solid #d9dde3; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    header h1 { font-size: 1.1rem; margin: 0; }
+    header a { color: #0098f7; font-size: 14px; }
+    main { max-width: 1000px; margin: 24px auto; padding: 0 16px; display: grid; gap: 24px; }
+    section { background: #fff; border: 1px solid #d9dde3; border-radius: 8px; padding: 20px; }
+    h2 { font-size: 1rem; margin: 0 0 12px; }
+    label.field { display: block; font-size: 13px; color: #6b7280; margin-bottom: 4px; }
+    input[type=text] { width: 100%; padding: 8px 10px; border: 1px solid #d9dde3; border-radius: 4px; font: inherit; margin-bottom: 14px; }
+    .row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    button.btn { padding: 8px 18px; border: 1px solid #d9dde3; background: #fff; border-radius: 4px; cursor: pointer; font: inherit; }
+    button.primary { background: #0098f7; border-color: #0098f7; color: #fff; font-weight: 600; }
+    .post { border-top: 1px solid #e5e7eb; padding: 16px 0; }
+    .post:first-of-type { border-top: 0; }
+    .post h3 { margin: 0 0 4px; font-size: 1.05rem; }
+    .post time { font-size: 12px; color: #6b7280; }
+    .post .content { margin-top: 10px; line-height: 1.6; }
+    .empty { color: #6b7280; font-size: 14px; }
+    details { margin-top: 10px; }
+    pre { background: #f5f6f8; padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Banco de Questões — exemplo usando <code>dist/</code></h1>
+    <a href="./index.html">Ver demo com <code>src/</code></a>
+  </header>
+
+  <main>
+    <section>
+      <h2>Nova questão</h2>
+      <label class="field" for="title">Título</label>
+      <input type="text" id="title" placeholder="Ex.: Equilíbrio químico da amônia">
+
+      <label class="field" for="editor">Enunciado</label>
+      <textarea id="editor"></textarea>
+
+      <div class="row">
+        <button class="btn primary" id="save">Salvar questão</button>
+        <button class="btn" id="clear">Limpar</button>
+        <button class="btn" id="reset">Apagar todas</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Questões salvas (renderizadas com KaTeX)</h2>
+      <div id="posts"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/froala-editor@4/js/froala_editor.pkgd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/froala-editor@4/js/languages/pt_br.js"></script>
+  <script src="https://unpkg.com/mathlive"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/mhchem.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script src="../dist/froala-math-chemistry.umd.min.js"></script>
+
+  <script>
+    const STORAGE_KEY = 'fmc-demo-posts';
+    const DELIMITERS = [
+      { left: '\\(', right: '\\)', display: false },
+      { left: '\\[', right: '\\]', display: true }
+    ];
+
+    const editor = new FroalaEditor('#editor', {
+      // licenseKey: 'YOUR_FROALA_LICENSE_KEY',
+      language: 'pt_br',
+      mathChemistryLanguage: 'pt-BR',
+      heightMin: 220,
+      placeholderText: 'Escreva o enunciado e use Σ (matemática) ou o frasco (química)...',
+      toolbarButtons: [
+        'bold', 'italic', 'underline', 'subscript', 'superscript', '|',
+        'mathEditor', 'chemEditor', '|',
+        'formatOL', 'formatUL', '|',
+        'undo', 'redo', 'html'
+      ],
+      quickInsertButtons: ['mathEditor', 'chemEditor', 'image', 'table', 'ul', 'ol', 'hr']
+    });
+
+    const load = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const persist = (posts) => localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    function sanitize(html) {
+      const tpl = document.createElement('template');
+      tpl.innerHTML = html;
+      tpl.content.querySelectorAll('script,style,iframe,object,embed,link,meta,base,form').forEach((n) => n.remove());
+      tpl.content.querySelectorAll('*').forEach((el) => {
+        [...el.attributes].forEach((a) => {
+          if (/^on/i.test(a.name) || /^\s*(javascript|data):/i.test(a.value)) el.removeAttribute(a.name);
+        });
+      });
+      return tpl.innerHTML;
+    }
+
+    function renderPosts() {
+      const box = document.getElementById('posts');
+      const posts = load();
+      if (!posts.length) {
+        box.innerHTML = '<p class="empty">Nenhuma questão salva ainda.</p>';
+        return;
+      }
+      box.innerHTML = posts.map((p, i) => `
+        <article class="post" data-index="${i}">
+          <h3>${escapeHtml(p.title)}</h3>
+          <time>${new Date(p.date).toLocaleString('pt-BR')}</time>
+          <div class="content fr-view">${sanitize(p.html)}</div>
+          <details><summary>HTML salvo</summary><pre>${escapeHtml(p.html)}</pre></details>
+          <div class="row"><button class="btn" data-action="edit">Editar</button><button class="btn" data-action="delete">Excluir</button></div>
+        </article>`).join('');
+      renderMathInElement(box, { delimiters: DELIMITERS, throwOnError: false });
+    }
+
+    let editingIndex = null;
+
+    document.getElementById('save').addEventListener('click', () => {
+      const title = document.getElementById('title').value.trim() || 'Sem título';
+      const html = editor.html.get();
+      if (!editor.core.isEmpty()) {
+        const posts = load();
+        const post = { title, html, date: new Date().toISOString() };
+        if (editingIndex !== null) posts[editingIndex] = post; else posts.unshift(post);
+        persist(posts);
+        resetForm();
+        renderPosts();
+      }
+    });
+
+    function resetForm() {
+      editingIndex = null;
+      document.getElementById('title').value = '';
+      editor.html.set('');
+      document.getElementById('save').textContent = 'Salvar questão';
+    }
+
+    document.getElementById('clear').addEventListener('click', resetForm);
+    document.getElementById('reset').addEventListener('click', () => {
+      localStorage.removeItem(STORAGE_KEY);
+      resetForm();
+      renderPosts();
+    });
+
+    document.getElementById('posts').addEventListener('click', (e) => {
+      const action = e.target.dataset.action;
+      if (!action) return;
+      const index = Number(e.target.closest('.post').dataset.index);
+      const posts = load();
+      if (action === 'delete') {
+        posts.splice(index, 1);
+        persist(posts);
+        renderPosts();
+      } else if (action === 'edit') {
+        editingIndex = index;
+        document.getElementById('title').value = posts[index].title;
+        editor.html.set(posts[index].html);
+        document.getElementById('save').textContent = 'Atualizar questão';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    if (!load().length) {
+      persist([{
+        title: 'Exemplo: integral e reação química',
+        date: new Date().toISOString(),
+        html: '<p>Calcule <span class="math-tex" data-latex="\\int_0^\\infty e^{-x}\\,dx">\\(\\int_0^\\infty e^{-x}\\,dx\\)</span> e balanceie: <span class="math-tex" data-latex="\\ce{N2 + 3H2 <=> 2NH3}">\\(\\ce{N2 + 3H2 &lt;=&gt; 2NH3}\\)</span>.</p>'
+      }]);
+    }
+    renderPosts();
+  </script>
+</body>
+</html>

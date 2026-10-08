@@ -1,0 +1,55 @@
+{
+  "name": "froala-math-chemistry",
+  "version": "1.3.1",
+  "description": "Open-source Froala Editor plugin for math (MathLive/LaTeX) and chemistry (mhchem) formulas, rendered with KaTeX. A free alternative to Wiris/MathType.",
+  "keywords": ["froala", "froala-editor", "plugin", "math", "chemistry", "latex", "mathlive", "katex", "mhchem", "wiris", "mathtype", "wysiwyg"],
+  "license": "MIT",
+  "author": "Adriano",
+  "homepage": "https://github.com/adrianohcampos/froala-math-chemistry#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adrianohcampos/froala-math-chemistry.git"
+  },
+  "bugs": {
+    "url": "https://github.com/adrianohcampos/froala-math-chemistry/issues"
+  },
+  "main": "dist/froala-math-chemistry.umd.js",
+  "module": "dist/froala-math-chemistry.esm.mjs",
+  "types": "index.d.ts",
+  "unpkg": "dist/froala-math-chemistry.umd.min.js",
+  "jsdelivr": "dist/froala-math-chemistry.umd.min.js",
+  "style": "dist/froala-math-chemistry.min.css",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./dist/froala-math-chemistry.esm.mjs",
+      "require": "./dist/froala-math-chemistry.umd.js"
+    },
+    "./style.css": "./dist/froala-math-chemistry.min.css",
+    "./dist/*": "./dist/*"
+  },
+  "sideEffects": true,
+  "files": ["dist", "src", "index.d.ts", "LICENSE", "README.md", "CHANGELOG.md"],
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node build.mjs && node --test test/unit.test.mjs",
+    "start": "node demo/server.js",
+    "dev": "node demo/server.js",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "froala-editor": ">=3.0.0",
+    "katex": ">=0.16.0",
+    "mathlive": ">=0.100.0"
+  },
+  "peerDependenciesMeta": {
+    "katex": { "optional": true },
+    "mathlive": { "optional": true }
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Froala Math &amp; Chemistry Plugin - Demo</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/froala-editor@4/css/froala_editor.pkgd.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../src/styles.css">
+
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 24px auto; padding: 0 16px; color: #222; }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.1rem; margin-top: 2rem; }
+    .actions { margin: 12px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+    button.demo-btn { padding: 8px 16px; border: 1px solid #0098f7; background: #0098f7; color: #fff; border-radius: 4px; cursor: pointer; font: inherit; }
+    #output { border: 1px solid #d9dde3; border-radius: 6px; padding: 16px; min-height: 80px; }
+    pre { background: #f5f6f8; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>Froala Math &amp; Chemistry Plugin</h1>
+  <p>Use the <strong>Σ</strong> (math) and <strong>flask</strong> (chemistry) toolbar buttons. Double-click a formula to edit it.</p>
+
+  <p>
+    <label>Language:
+      <select id="lang" onchange="location.search = '?lang=' + this.value">
+        <option value="en">English</option>
+        <option value="pt-BR">Português (Brasil)</option>
+        <option value="pt">Português</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+        <option value="de">Deutsch</option>
+        <option value="it">Italiano</option>
+      </select>
+    </label>
+  </p>
+
+  <div id="editor">
+    <p>Quadratic formula: <span class="math-tex" data-latex="x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}">\(x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}\)</span></p>
+    <p>Reaction: <span class="math-tex" data-latex="\ce{H2O + CO2 -> H2CO3}">\(\ce{H2O + CO2 -> H2CO3}\)</span></p>
+  </div>
+
+  <div class="actions">
+    <button class="demo-btn" id="render">Render / View Output</button>
+  </div>
+
+  <h2>Rendered output (KaTeX auto-render)</h2>
+  <div id="output"></div>
+
+  <h2>Saved HTML</h2>
+  <pre id="html"></pre>
+
+  <script src="https://cdn.jsdelivr.net/npm/froala-editor@4/js/froala_editor.pkgd.min.js"></script>
+  <script src="https://unpkg.com/mathlive"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/mhchem.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+
+  <script type="module">
+    import '../src/index.js';
+
+    const editor = new FroalaEditor('#editor', {
+      // licenseKey: 'YOUR_FROALA_LICENSE_KEY',
+      heightMin: 220,
+      mathChemistryLanguage: new URLSearchParams(location.search).get('lang') || document.getElementById('lang').value,
+      toolbarButtons: ['bold', 'italic', 'underline', '|', 'mathEditor', 'chemEditor', '|', 'undo', 'redo', 'html'],
+      quickInsertButtons: ['mathEditor', 'chemEditor', 'image', 'table', 'ul', 'ol', 'hr'],
+      mathChemistryKatexOptions: { throwOnError: false }
+    });
+
+    document.getElementById('lang').value = new URLSearchParams(location.search).get('lang') || 'en';
+
+    const output = document.getElementById('output');
+    const htmlPre = document.getElementById('html');
+
+    function sanitize(html) {
+      const tpl = document.createElement('template');
+      tpl.innerHTML = html;
+      tpl.content.querySelectorAll('script,style,iframe,object,embed,link,meta,base,form').forEach((n) => n.remove());
+      tpl.content.querySelectorAll('*').forEach((el) => {
+        [...el.attributes].forEach((a) => {
+          if (/^on/i.test(a.name) || /^\s*(javascript|data):/i.test(a.value)) el.removeAttribute(a.name);
+        });
+      });
+      return tpl.innerHTML;
+    }
+
+    function renderOutput() {
+      const html = editor.html.get();
+      htmlPre.textContent = html;
+      output.innerHTML = sanitize(html);
+      window.renderMathInElement(output, {
+        delimiters: [
+          { left: '\\(', right: '\\)', display: false },
+          { left: '\\[', right: '\\]', display: true }
+        ],
+        throwOnError: false
+      });
+    }
+
+    document.getElementById('render').addEventListener('click', renderOutput);
+  </script>
+</body>
+</html>
