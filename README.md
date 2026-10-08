@@ -199,6 +199,8 @@ Keep the Froala key in `.env` / `config/services.php`; never commit it. Always s
 3. `npm test` rebuilds `dist/` and runs the unit tests (`test/unit.test.mjs`, Node's built-in test runner). Commit the regenerated `dist/`; CI fails if it is out of date.
 4. Open a pull request describing the change.
 
+Releases: bump `version` in `package.json`, update the CHANGELOG, run `npm test` and commit `dist/`, then `git tag vX.Y.Z && git push --tags`. The `release` workflow validates the tag, creates a GitHub Release with the package tarball and `dist/` files, and publishes to npm when the `NPM_TOKEN` secret is set.
+
 Changes are tracked in [CHANGELOG.md](./CHANGELOG.md).
 
 ## License
